@@ -1,6 +1,7 @@
 import pygame
 import random
 import time
+import sys
 
 # ... (rest of the imports)
 
@@ -44,7 +45,7 @@ PLOT_MARGIN = 10
 # Character properties
 CHAR_WIDTH = 30
 CHAR_HEIGHT = 40
-CHAR_SPEED = [5,10,15,20]
+CHAR_SPEED = [15,20,25,30]
 CHAR_SPEED_IDX = 0
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -65,17 +66,85 @@ MARKET_BANNER_WIDTH = 250
 MARKET_BANNER_HEIGHT = 75
 MARKET_BANNER_COLOR = (50, 205, 50) # Green
 
+# Building definitions
+BUILDING_WIDTH = 100
+BUILDING_HEIGHT = 100
+BUILDING_COLOR = (150, 150, 150)
+
+MAX_HOLD_SIZE = [50,100,200,400]
+MAX_HOLD_SIZE_IDX  = 0
+
+GRAVEL_COLOR = (200, 200, 200)  # Gray color for gravel
+GRAVEL_WIDTH = 40  # Width of the gravel path
+PATH_WIDTH = 50  # Adjust this value based on your desired path width
+
+money = 10000
+
+sell_amount = {
+    "Wheat": 1,
+    "Potatoes": 5,
+    "Carrots": 10,
+    "Corn": 20
+}
+
+# Draw the store menu
+STORE_WIDTH = 500  # Adjust as needed
+STORE_HEIGHT = 400  # Adjust as needed
+
+# Store flags
+store_open = False
+left_store_area = True 
+market_open = False
+left_market_area = True
+
+market_banner_on = False
+latestCrop = None
+latestSoldValue = None
+latestSoldAmount = None
+
+# Assuming you have these global variables defined at the top of your script:
+upgrade_stages = [1, 1, 1, 1]  # Initial stages for the four upgrades
+secret_option_cost = 10000  # Cost for the secret option
+
+# Define a margin for the dirt
+DIRT_MARGIN = 10
+
+# Load and scale the dirt texture
+large_dirt_texture = pygame.image.load('dirt.png').convert_alpha()
+scaled_dirt_texture = pygame.transform.scale(large_dirt_texture, (PLOT_WIDTH + DIRT_MARGIN * 2, PLOT_HEIGHT + DIRT_MARGIN * 2))
+
 tilled_dirt_template = pygame.image.load('tilled_dirt.png')
 tilled_dirt_texture = pygame.transform.scale(tilled_dirt_template, (PLOT_WIDTH, PLOT_HEIGHT))
 
+# Load the carrot texture
+carrot_texture = pygame.image.load('carrot.png').convert_alpha()
+carrot_texture = pygame.transform.scale(carrot_texture, (PLOT_WIDTH, PLOT_HEIGHT))
+
+potatoe_texture = pygame.image.load('potatoes.png').convert_alpha()
+potatoe_texture = pygame.transform.scale(potatoe_texture, (PLOT_WIDTH, PLOT_HEIGHT))
+
+corn_texture = pygame.image.load('corn.png').convert_alpha()
+corn_texture = pygame.transform.scale(corn_texture, (PLOT_WIDTH, PLOT_HEIGHT))
+
+wheat_texture = pygame.image.load('wheat.png').convert_alpha()
+wheat_texture = pygame.transform.scale(wheat_texture, (PLOT_WIDTH, PLOT_HEIGHT))
 
 JohnDeerRed = [pygame.image.load('john_w.png').convert_alpha(), pygame.image.load('Truck Tiers/Red Truck/john_a.png').convert_alpha(), pygame.image.load('john_s.png').convert_alpha(),pygame.image.load('Truck Tiers/Red Truck/john_d.png').convert_alpha(), pygame.image.load('Truck Tiers/Red Truck/john_wa.png').convert_alpha(), pygame.image.load('Truck Tiers/Red Truck/john_wd.png').convert_alpha(),pygame.image.load('Truck Tiers/Red Truck/john_sa.png').convert_alpha(),pygame.image.load('Truck Tiers/Red Truck/john_sd.png').convert_alpha()]
 JohnDeerBlue = [pygame.image.load('john_w.png').convert_alpha(), pygame.image.load('Truck Tiers/Blue Truck/john_a.png').convert_alpha(), pygame.image.load('john_s.png').convert_alpha(),pygame.image.load('Truck Tiers/Blue Truck/john_d.png').convert_alpha(), pygame.image.load('Truck Tiers/Blue Truck/john_wa.png').convert_alpha(), pygame.image.load('Truck Tiers/Blue Truck/john_wd.png').convert_alpha(),pygame.image.load('Truck Tiers/Blue Truck/john_sa.png').convert_alpha(),pygame.image.load('Truck Tiers/Blue Truck/john_sd.png').convert_alpha()]
 JohnDeerPurple = [pygame.image.load('john_w.png').convert_alpha(), pygame.image.load('Truck Tiers/Purple Truck/john_a.png').convert_alpha(), pygame.image.load('john_s.png').convert_alpha(),pygame.image.load('Truck Tiers/Purple Truck/john_d.png').convert_alpha(), pygame.image.load('Truck Tiers/Purple Truck/john_wa.png').convert_alpha(), pygame.image.load('Truck Tiers/Purple Truck/john_wd.png').convert_alpha(),pygame.image.load('Truck Tiers/Purple Truck/john_sa.png').convert_alpha(),pygame.image.load('Truck Tiers/Purple Truck/john_sd.png').convert_alpha()]
 JohnDeerYellow = [pygame.image.load('john_w.png').convert_alpha(), pygame.image.load('john_a.png').convert_alpha(), pygame.image.load('john_s.png').convert_alpha(),pygame.image.load('john_d.png').convert_alpha(), pygame.image.load('john_wa.png').convert_alpha(), pygame.image.load('john_wd.png').convert_alpha(),pygame.image.load('john_sa.png').convert_alpha(),pygame.image.load('john_sd.png').convert_alpha()]
-
 CHARACTERS = [JohnDeerRed, JohnDeerBlue, JohnDeerPurple, JohnDeerYellow]
 
+# ... (Plot and Character class definitions)
+gravel_texture = pygame.image.load('gravel.png').convert_alpha()
+original_width, original_height = gravel_texture.get_size()
+
+# Compute the scaling factor
+scaling_factor = PATH_WIDTH / original_width
+new_height = int(original_height * scaling_factor)
+scaled_gravel_texture = pygame.transform.scale(gravel_texture, (PATH_WIDTH, new_height))
+
+building_image = pygame.image.load('Store.png')
 
 # Create a plot class
 class Plot:
@@ -113,42 +182,6 @@ class Plot:
         if self.crop_type == "Wheat" and self.seed_stage == 2:
             screen.blit(wheat_texture, (self.x - camera_x, self.y - camera_y))
 
-money = 500
-
-
-
-sell_amount = {
-    "Wheat": 1,
-    "Potatoes": 5,
-    "Carrots": 10,
-    "Corn": 20
-}
-
-MAX_HOLD_SIZE = [10,50,100,200]
-MAX_HOLD_SIZE_IDX  = 0
-
-
-# Load the carrot texture
-carrot_texture = pygame.image.load('carrot.png').convert_alpha()
-# Scale it to fit the plot size (optional, only if the original PNG is too big or too small)
-carrot_texture = pygame.transform.scale(carrot_texture, (PLOT_WIDTH, PLOT_HEIGHT))
-
-potatoe_texture = pygame.image.load('potatoes.png').convert_alpha()
-# Scale it to fit the plot size (optional, only if the original PNG is too big or too small)
-potatoe_texture = pygame.transform.scale(potatoe_texture, (PLOT_WIDTH, PLOT_HEIGHT))
-
-# Load the carrot texture
-corn_texture = pygame.image.load('corn.png').convert_alpha()
-# Scale it to fit the plot size (optional, only if the original PNG is too big or too small)
-corn_texture = pygame.transform.scale(corn_texture, (PLOT_WIDTH, PLOT_HEIGHT))
-
-# Load the carrot texture
-wheat_texture = pygame.image.load('wheat.png').convert_alpha()
-# Scale it to fit the plot size (optional, only if the original PNG is too big or too small)
-wheat_texture = pygame.transform.scale(wheat_texture, (PLOT_WIDTH, PLOT_HEIGHT))
-
-
-
 class Character:
     def __init__(self, x, y):
         self.x = x
@@ -162,8 +195,7 @@ class Character:
             "Carrots": 0,
             "Corn": 0
         }
-
-
+        
     def move(self, dx, dy):
         if dx != 0 and dy != 0:
             # Adjust the velocity for diagonal movement
@@ -237,9 +269,6 @@ class Character:
                         plot.seed_stage = 0
                         plot.set_next_growth_time()
                     elif self.character < 3: self.draw_crop_banner(plot.crop_type, 272)
-            #    if plot.seed_stage == 2:
-            #         harvested_crops[plot.crop_type] += 1
-            #         plot.seed_stage = 0
                 
 
 # Draw the harvested crop counts on the screen
@@ -269,47 +298,15 @@ def draw_harvested_counts(screen,character):
 
 # Create the game screen
 
-GRAVEL_COLOR = (200, 200, 200)  # Gray color for gravel
-GRAVEL_WIDTH = 40  # Width of the gravel path
-PATH_WIDTH = 50  # Adjust this value based on your desired path width
-
 # ... (inside the main game loop)
 
 # Horizontal path
-# ... (Plot and Character class definitions)
-gravel_texture = pygame.image.load('gravel.png').convert_alpha()
-
-original_width, original_height = gravel_texture.get_size()
-
-# Compute the scaling factor
-scaling_factor = PATH_WIDTH / original_width
-new_height = int(original_height * scaling_factor)
-
-# Scale the image
-scaled_gravel_texture = pygame.transform.scale(gravel_texture, (PATH_WIDTH, new_height))
-
 # Draw the gravel paths
 def draw_gravel_paths(screen, camera_x, camera_y):
     # Horizontal path
     pygame.draw.rect(screen, GRAVEL_COLOR, (0 - camera_x, (WORLD_HEIGHT // 2) - (GRAVEL_WIDTH // 2) - camera_y, WORLD_WIDTH, GRAVEL_WIDTH))
     # Vertical path
     pygame.draw.rect(screen, GRAVEL_COLOR, ((WORLD_WIDTH // 2) - (GRAVEL_WIDTH // 2) - camera_x, 0 - camera_y, GRAVEL_WIDTH, WORLD_HEIGHT))
-
-STORE_WIDTH = 300
-STORE_HEIGHT = 400
-
-# Store flags
-store_open = False
-left_store_area = True 
-market_open = False
-left_market_area = True
-
-market_banner_on = False
-latestCrop = None
-latestSoldValue = None
-latestSoldAmount = None
-
-
 
 
 # ... (Plot and Character class definitions)
@@ -320,14 +317,6 @@ def check_store_position(character):
     if left_store_area and character.x < CHAR_WIDTH and (WORLD_HEIGHT // 2 - STORE_HEIGHT // 2) < character.y < (WORLD_HEIGHT // 2 + STORE_HEIGHT // 2):
         store_open = True
         left_store_area = False 
-
-# Draw the store menu
-STORE_WIDTH = 400  # Adjust as needed
-STORE_HEIGHT = 400  # Adjust as needed
-
-# Assuming you have these global variables defined at the top of your script:
-upgrade_stages = [1, 1, 1, 1]  # Initial stages for the four upgrades
-secret_option_cost = 500  # Cost for the secret option
 
 def draw_store(screen):
     store_rect = pygame.Rect(SCREEN_WIDTH // 2 - STORE_WIDTH // 2, SCREEN_HEIGHT // 2 - STORE_HEIGHT // 2, STORE_WIDTH, STORE_HEIGHT)
@@ -353,7 +342,7 @@ def draw_store(screen):
         if idx < 4:
             option_text = f"{upgrade_name} ({stages[idx]}/4) - Cost: ${costs[idx]}"
         else:
-            option_text = f"{upgrade_name} - Cost: ${costs[idx][upgrade_stages[idx]]}"
+            option_text = f"{upgrade_name} - Cost: $10,000"
 
         text_width, text_height = font.size(option_text)
         text_x = store_rect.centerx - text_width // 2
@@ -390,7 +379,7 @@ def draw_market(screen):
     mouse_pos = pygame.mouse.get_pos()
     mouse_clicked = pygame.mouse.get_pressed()[0]  # [0] is the left mouse button
     # Display selling options
-    options = ["Sell Wheat", "Sell Potatoes", "Sell Carrots", "Sell Corn", "Sell All Crops"]
+    options = ["Sell Wheat ($1)", "Sell Potatoes ($5)", "Sell Carrots ($20)", "Sell Corn ($50)", "Sell All Crops"]
     offset_y = 80
     for option in options:
         # Get the text width and height for the current option
@@ -440,22 +429,59 @@ def draw_market_banner(crop, soldValue, soldAmount):
     text_surface = font.render(text, True, (0, 0, 0))
     screen.blit(text_surface, (SCREEN_WIDTH/2 - 70, offset_y))
 
-
-
-# Building definitions
-BUILDING_WIDTH = 100
-BUILDING_HEIGHT = 100
-BUILDING_COLOR = (150, 150, 150)
-
-def draw_building(screen, x, y, label, camera_x, camera_y):
+def draw_building(screen, x, y, label, camera_x, camera_y, flip):
     """Draws a building with a label at the specified position."""
     # Building rectangle
-    pygame.draw.rect(screen, BUILDING_COLOR, (x - camera_x, y - camera_y, BUILDING_WIDTH, BUILDING_HEIGHT))
-    
+    if flip:
+        newimage = pygame.transform.flip(building_image, True, False)
+    else: newimage = building_image
+    screen.blit(newimage, (x - camera_x, y - camera_y))
     # Label for the building
     font = pygame.font.SysFont(None, 24)
-    text_surface = font.render(label, True, (0, 0, 0))  # Black label
+    text_surface = font.render(label, True, (255, 255, 255))  # Black label
     screen.blit(text_surface, (x - camera_x + BUILDING_WIDTH // 2 - text_surface.get_width() // 2, y - camera_y + BUILDING_HEIGHT // 2 - text_surface.get_height() // 2))
+
+def run_secret_ending(screen):
+    large_image = pygame.image.load("big_john.png")
+
+    # Get screen dimensions
+    screen_width, screen_height = screen.get_size()
+
+    # Calculate position to center the image on the screen
+    image_width, image_height = large_image.get_size()
+    image_x = (screen_width - image_width) // 2
+    image_y = (screen_height - image_height) // 2
+
+    # Image rectangle for collision detection
+    image_rect = pygame.Rect(image_x, image_y, image_width, image_height)
+
+    # Prepare the "Thanks for playing" text
+    font = pygame.font.Font(pygame.font.get_default_font(), 60)  # You can replace with a specific font path
+    text_surface = font.render("Thanks for playing", True, (0,0,0))  # White color
+    text_x = screen_width // 2 - text_surface.get_width() // 2
+    text_y = screen_height // 2 - text_surface.get_height() // 2    
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            # Check for mouse click event
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                # Get mouse position
+                x, y = pygame.mouse.get_pos()
+                # If click is outside the image, close the game
+                if not image_rect.collidepoint(x, y):
+                    pygame.quit()
+                    sys.exit()
+
+        # Draw the image centered on the screen
+        screen.blit(large_image, (image_x, image_y))
+        
+        # Draw the text on top of the image
+        screen.blit(text_surface, (text_x, text_y))
+
+        pygame.display.flip()
 
 
 # Adjust plot generation for the 2x2 grid with gravel paths
@@ -472,35 +498,33 @@ for section in sections:
         for y in range(section["start_y"], section["end_y"], PLOT_HEIGHT + PLOT_MARGIN):
             plots.append(Plot(x, y, section["crop"]))
 
-
 character = Character(WORLD_WIDTH // 2, WORLD_HEIGHT // 2)
-# Define a margin for the dirt
-DIRT_MARGIN = 10
-
-# Load and scale the dirt texture
-large_dirt_texture = pygame.image.load('dirt.png').convert_alpha()
-scaled_dirt_texture = pygame.transform.scale(large_dirt_texture, (PLOT_WIDTH + DIRT_MARGIN * 2, PLOT_HEIGHT + DIRT_MARGIN * 2))
 
 store_options = {
-    "Upgrade 1": {
-        "cost": [100,200,300,400],
+    "Upgrade Tractor": {
+        "cost": [100,200,400,800],
         "stage": 0,
         "action": "increase_tractor"
     },
-    "Upgrade 2": {
-        "cost": [100,200,300,400],
+    "Upgrade Fertilizer": {
+        "cost": [100,200,400,800],
         "stage": 0,
         "action": "increase_fertilizer"
     },
-    "Upgrade 3": {
-        "cost": [100,200,300,400],
+    "Upgrade Speed": {
+        "cost": [100,200,400,800],
         "stage": 0,
         "action": "increase_speed"
     },
-    "Upgrade 4": {
-        "cost": [100,200,300,400],
+    "Upgrade Inventory": {
+        "cost": [100,200,400,800],
         "stage": 0,
         "action": "increase_inventory"
+    },
+    "Secret?": {
+        "cost": [10000],
+        "stage": 0,
+        "action": "secret_ending"
     }
     # You can add more options here in a similar manner
 }
@@ -515,9 +539,6 @@ def get_option_rect(index):
 running = True
 while running:
     screen.fill(DIRT)
-    #for x in range(0, SCREEN_WIDTH, dirt_texture.get_width()):
-    #    for y in range(0, SCREEN_HEIGHT, dirt_texture.get_height()):
-    #        screen.blit(dirt_texture, (x, y))
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -560,8 +581,7 @@ while running:
                 for index, (option_name, option_data) in enumerate(store_options.items()):
                     option_rect = get_option_rect(index)
                     if option_rect.collidepoint(x, y):
-                        # Handle click for this option
-                        if character.money >= option_data["cost"][option_data["stage"]] and option_data["stage"] < 4:
+                        if character.money >= option_data["cost"][option_data["stage"]] and option_data["stage"] < 3:
                             if option_data["action"] == "increase_tractor":
                                 character.character += 1
                                 character.money -= option_data["cost"][option_data["stage"]]
@@ -579,6 +599,8 @@ while running:
                                 MAX_HOLD_SIZE_IDX += 1
                                 character.money -= option_data["cost"][option_data["stage"]]
                                 option_data["stage"] += 1
+                            if option_data["action"] == "secret_ending":
+                                run_secret_ending(screen)
 
     if store_open:
         draw_store(screen)
@@ -623,7 +645,6 @@ while running:
     check_store_position(character)
     check_market_position(character)
 
-    #draw_gravel_paths(screen, camera_x, camera_y)
     for x in range(0, WORLD_WIDTH, scaled_gravel_texture.get_width()):
         for y in range(WORLD_HEIGHT // 2 - PATH_WIDTH // 2 -2 , WORLD_HEIGHT // 2 -2, scaled_gravel_texture.get_height()):
             screen.blit(scaled_gravel_texture, (x - camera_x, y - camera_y))
@@ -632,11 +653,7 @@ while running:
     for y in range(0, WORLD_HEIGHT, scaled_gravel_texture.get_height()):
         for x in range(WORLD_WIDTH // 2 - PATH_WIDTH // 2 - 5 , WORLD_WIDTH // 2 + PATH_WIDTH // 2-5, scaled_gravel_texture.get_width()):
             screen.blit(scaled_gravel_texture, (x - camera_x, y - camera_y))
-            
-
-    
-    
-
+        
     for plot in plots:
         screen.blit(scaled_dirt_texture, (plot.x - camera_x - DIRT_MARGIN, plot.y - camera_y - DIRT_MARGIN))
         if (plot.x + PLOT_WIDTH + DIRT_MARGIN >= camera_x and plot.x - DIRT_MARGIN <= camera_x + SCREEN_WIDTH) and \
@@ -645,15 +662,13 @@ while running:
             plot.draw(screen, camera_x, camera_y)
 
         
-    draw_building(screen, 0, WORLD_HEIGHT // 2 - BUILDING_HEIGHT // 2, "Store", camera_x, camera_y)
-    draw_building(screen, WORLD_WIDTH - BUILDING_WIDTH, WORLD_HEIGHT // 2 - BUILDING_HEIGHT // 2, "Market", camera_x, camera_y)
-
+    draw_building(screen, 0, WORLD_HEIGHT // 2 - BUILDING_HEIGHT // 2, "Store", camera_x, camera_y, False)
+    draw_building(screen, WORLD_WIDTH - BUILDING_WIDTH, WORLD_HEIGHT // 2 - BUILDING_HEIGHT // 2, "Market", camera_x, camera_y, True)
 
     character.check_collision(plots)  # Plant seeds if character collides with a plot
     
     character.draw(screen, camera_x, camera_y)
     draw_harvested_counts(screen,character)
-
 
     pygame.display.flip()
     pygame.time.wait(50)
