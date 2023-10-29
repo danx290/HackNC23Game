@@ -78,7 +78,7 @@ GRAVEL_COLOR = (200, 200, 200)  # Gray color for gravel
 GRAVEL_WIDTH = 40  # Width of the gravel path
 PATH_WIDTH = 50  # Adjust this value based on your desired path width
 
-money = 3500
+money = 20
 
 sell_amount = {
     "Wheat": 1,
