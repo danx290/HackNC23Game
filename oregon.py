@@ -18,7 +18,7 @@ WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 BROWN = (139, 69, 19)
 RED = (255, 0, 0)
-DIRT = (181,101,30)
+DIRT = (131,101,57)
 
 CROP_COLORS = {
     "Carrots": (255, 105, 0),  # Orange for carrot
@@ -52,6 +52,11 @@ BACKGROUND_BOX_WIDTH = 140
 BACKGROUND_BOX_HEIGHT = 150
 BACKGROUND_BOX_COLOR = (240, 240, 240)  # Light gray
 
+#Crop banner dimensions
+CROP_BANNER_WIDTH = 300
+CROP_BANNER_HEIGHT = 100
+CROP_BANNER_COLOR = (50, 205, 50) # Green
+
 # Seed growth stages
 SEED_STAGES = [
     pygame.Surface((PLOT_WIDTH, PLOT_HEIGHT)),
@@ -71,7 +76,7 @@ JohnDeerBlue = [pygame.image.load('john_w.png').convert_alpha(), pygame.image.lo
 JohnDeerPurple = [pygame.image.load('john_w.png').convert_alpha(), pygame.image.load('Truck Tiers/Purple Truck/john_a.png').convert_alpha(), pygame.image.load('john_s.png').convert_alpha(),pygame.image.load('Truck Tiers/Purple Truck/john_d.png').convert_alpha(), pygame.image.load('Truck Tiers/Purple Truck/john_wa.png').convert_alpha(), pygame.image.load('Truck Tiers/Purple Truck/john_wd.png').convert_alpha(),pygame.image.load('Truck Tiers/Purple Truck/john_sa.png').convert_alpha(),pygame.image.load('Truck Tiers/Purple Truck/john_sd.png').convert_alpha()]
 JohnDeerYellow = [pygame.image.load('john_w.png').convert_alpha(), pygame.image.load('john_a.png').convert_alpha(), pygame.image.load('john_s.png').convert_alpha(),pygame.image.load('john_d.png').convert_alpha(), pygame.image.load('john_wa.png').convert_alpha(), pygame.image.load('john_wd.png').convert_alpha(),pygame.image.load('john_sa.png').convert_alpha(),pygame.image.load('john_sd.png').convert_alpha()]
 
-CHARACTERS = [JohnDeerYellow]
+CHARACTERS = [JohnDeerRed, JohnDeerBlue, JohnDeerPurple, JohnDeerYellow]
 
 # Create a plot class
 class Plot:
@@ -100,8 +105,14 @@ class Plot:
     def draw(self, screen, camera_x, camera_y):
         color = BROWN if self.seed_stage == 0 else CROP_COLORS[self.crop_type]
         pygame.draw.rect(screen, color, (self.x - camera_x, self.y - camera_y, PLOT_WIDTH, PLOT_HEIGHT))
-
+        if self.crop_type == "Carrots":
+            screen.blit(carrot_texture, (self.x - camera_x, self.y - camera_y))
+        if self.crop_type == "Potatoes":
+            screen.blit(potatoe_texture, (self.x - camera_x, self.y - camera_y))
 # Create a character class
+
+
+
 
 money = 0
 
@@ -111,6 +122,25 @@ harvested_crops = {
     "Carrots": 0,
     "Corn": 0
 }
+
+sell_amount = {
+    "Wheat": 1,
+    "Potatoes": 5,
+    "Carrots": 10,
+    "Corn": 20
+}
+
+
+
+# Load the carrot texture
+carrot_texture = pygame.image.load('carrot.png').convert_alpha()
+# Scale it to fit the plot size (optional, only if the original PNG is too big or too small)
+carrot_texture = pygame.transform.scale(carrot_texture, (PLOT_WIDTH, PLOT_HEIGHT))
+
+potatoe_texture = pygame.image.load('potatoes.png').convert_alpha()
+# Scale it to fit the plot size (optional, only if the original PNG is too big or too small)
+potatoe_texture = pygame.transform.scale(potatoe_texture, (PLOT_WIDTH, PLOT_HEIGHT))
+
 
 
 
@@ -159,33 +189,37 @@ class Character:
         draw_y = self.y - camera_y - self.image.get_height() // 2
         screen.blit(self.image, (draw_x, draw_y))
 
+    def draw_crop_banner(self, crop, offset_x):
+        pygame.draw.rect(screen, CROP_BANNER_COLOR, (250, 30, CROP_BANNER_WIDTH, CROP_BANNER_HEIGHT))
+        font = pygame.font.SysFont(None, 23)
+        offset_y = 70
+        text = f"Upgrade your tractor to farm {crop.lower()}!"
+        text_surface = font.render(text, True, (0, 0, 0))
+        screen.blit(text_surface, (offset_x, offset_y))
+
     def check_collision(self, plots):
-        farmingAbility = 3
-        if CHARACTERS == [JohnDeerPurple]:
-            farmingAbility = 2
-        elif CHARACTERS == [JohnDeerBlue]:
-            farmingAbility = 1
-        elif CHARACTERS == [JohnDeerRed]:
-            farmingAbility = 0
         for plot in plots:
             if (plot.x <= self.x <= plot.x + PLOT_WIDTH or plot.x <= self.x + CHAR_WIDTH <= plot.x + PLOT_WIDTH) and \
                (plot.y <= self.y <= plot.y + PLOT_HEIGHT or plot.y <= self.y + CHAR_HEIGHT <= plot.y + PLOT_HEIGHT):
                 if plot.crop_type == "Wheat":
-                   if plot.seed_stage == 2:
-                    harvested_crops[plot.crop_type] += 1
-                    plot.seed_stage = 0
+                    if plot.seed_stage == 2:
+                        harvested_crops[plot.crop_type] += 1
+                        plot.seed_stage = 0
                 if plot.crop_type == "Potatoes":
-                   if plot.seed_stage == 2 and farmingAbility >= 1:
-                    harvested_crops[plot.crop_type] += 1
-                    plot.seed_stage = 0
+                    if plot.seed_stage == 2 and self.character >= 1:
+                        harvested_crops[plot.crop_type] += 1
+                        plot.seed_stage = 0
+                    elif self.character < 1: self.draw_crop_banner(plot.crop_type, 263)
                 if plot.crop_type == "Carrots":
-                   if plot.seed_stage == 2 and farmingAbility >= 2:
-                    harvested_crops[plot.crop_type] += 1
-                    plot.seed_stage = 0
+                    if plot.seed_stage == 2 and self.character >= 2:
+                        harvested_crops[plot.crop_type] += 1
+                        plot.seed_stage = 0
+                    elif self.character < 2: self.draw_crop_banner(plot.crop_type, 263)
                 if plot.crop_type == "Corn":
-                   if plot.seed_stage == 2 and farmingAbility >= 3:
-                    harvested_crops[plot.crop_type] += 1
-                    plot.seed_stage = 0
+                    if plot.seed_stage == 2 and self.character >= 3:
+                        harvested_crops[plot.crop_type] += 1
+                        plot.seed_stage = 0
+                    elif self.character < 3: self.draw_crop_banner(plot.crop_type, 272)
             #    if plot.seed_stage == 2:
             #         harvested_crops[plot.crop_type] += 1
             #         plot.seed_stage = 0
@@ -220,8 +254,22 @@ def draw_harvested_counts(screen):
 
 GRAVEL_COLOR = (200, 200, 200)  # Gray color for gravel
 GRAVEL_WIDTH = 40  # Width of the gravel path
+PATH_WIDTH = 50  # Adjust this value based on your desired path width
 
+# ... (inside the main game loop)
+
+# Horizontal path
 # ... (Plot and Character class definitions)
+gravel_texture = pygame.image.load('gravel.png').convert_alpha()
+
+original_width, original_height = gravel_texture.get_size()
+
+# Compute the scaling factor
+scaling_factor = PATH_WIDTH / original_width
+new_height = int(original_height * scaling_factor)
+
+# Scale the image
+scaled_gravel_texture = pygame.transform.scale(gravel_texture, (PATH_WIDTH, new_height))
 
 # Draw the gravel paths
 def draw_gravel_paths(screen, camera_x, camera_y):
@@ -341,13 +389,12 @@ while running:
                 if SCREEN_WIDTH // 2 - 100 < x < SCREEN_WIDTH // 2 + 100 and option_y < y < option_y + option_height:
                     if option == "Sell All Crops":
                         for crop_type in harvested_crops:
-                            money += harvested_crops[crop_type]
+                            money += harvested_crops[crop_type] * sell_amount[crop_type]
                             harvested_crops[crop_type] = 0
                     else:
                         crop_type = option.split(" ")[1]
-                        money += harvested_crops[crop_type]
+                        money += harvested_crops[crop_type] * sell_amount[crop_type]
                         harvested_crops[crop_type] = 0
-
 
 
     keys = pygame.key.get_pressed()
@@ -382,9 +429,16 @@ while running:
     check_store_position(character)
     check_market_position(character)
 
-    draw_gravel_paths(screen, camera_x, camera_y)
+    #draw_gravel_paths(screen, camera_x, camera_y)
+    for x in range(0, WORLD_WIDTH, scaled_gravel_texture.get_width()):
+        for y in range(WORLD_HEIGHT // 2 - PATH_WIDTH // 2 -2 , WORLD_HEIGHT // 2 -2, scaled_gravel_texture.get_height()):
+            screen.blit(scaled_gravel_texture, (x - camera_x, y - camera_y))
 
-    
+# Vertical path
+    for y in range(0, WORLD_HEIGHT, scaled_gravel_texture.get_height()):
+        for x in range(WORLD_WIDTH // 2 - PATH_WIDTH // 2 - 5 , WORLD_WIDTH // 2 + PATH_WIDTH // 2-5, scaled_gravel_texture.get_width()):
+            screen.blit(scaled_gravel_texture, (x - camera_x, y - camera_y))
+            
 
     
     if store_open:
