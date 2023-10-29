@@ -5,8 +5,9 @@ import time
 # ... (rest of the imports)
 
 # Constants
-GROWTH_MEAN = 10  # 30 seconds on average
-GROWTH_STD_DEV = 2  
+GROWTH_MEAN = [120,90,60,30]  # 30 seconds on average
+GROWTH_MEAN_IDX = 0
+GROWTH_STD_DEV = GROWTH_MEAN[GROWTH_MEAN_IDX]/4
 
 # Initialize pygame
 pygame.init()
@@ -43,10 +44,11 @@ PLOT_MARGIN = 10
 # Character properties
 CHAR_WIDTH = 30
 CHAR_HEIGHT = 40
-CHAR_SPEED = 20
+CHAR_SPEED = [5,10,15,20]
+CHAR_SPEED_IDX = 0
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption('Farming Simulator with Camera System')
+pygame.display.set_caption('Farming Simulator')
 
 #Box in top right
 BACKGROUND_BOX_WIDTH = 140
@@ -56,7 +58,12 @@ BACKGROUND_BOX_COLOR = (240, 240, 240)  # Light gray
 #Crop banner dimensions
 CROP_BANNER_WIDTH = 300
 CROP_BANNER_HEIGHT = 100
-CROP_BANNER_COLOR = (50, 205, 50) # Green
+CROP_BANNER_COLOR = (220, 20, 60) # Red
+
+#Market banner dimensions
+MARKET_BANNER_WIDTH = 250
+MARKET_BANNER_HEIGHT = 75
+MARKET_BANNER_COLOR = (50, 205, 50) # Green
 
 tilled_dirt_template = pygame.image.load('tilled_dirt.png')
 tilled_dirt_texture = pygame.transform.scale(tilled_dirt_template, (PLOT_WIDTH, PLOT_HEIGHT))
@@ -82,7 +89,7 @@ class Plot:
     
     def set_next_growth_time(self):
         # Set the next growth time based on a Gaussian distribution
-        self.next_growth_time = time.time() + random.gauss(GROWTH_MEAN, GROWTH_STD_DEV)
+        self.next_growth_time = time.time() + random.gauss(GROWTH_MEAN[GROWTH_MEAN_IDX], GROWTH_STD_DEV)
 
     def plant_seed(self):
         if self.seed_stage == 0:
@@ -101,7 +108,10 @@ class Plot:
             screen.blit(carrot_texture, (self.x - camera_x, self.y - camera_y))
         if self.crop_type == "Potatoes" and self.seed_stage == 2:
             screen.blit(potatoe_texture, (self.x - camera_x, self.y - camera_y))
-
+        if self.crop_type == "Corn" and self.seed_stage == 2:
+            screen.blit(corn_texture, (self.x - camera_x, self.y - camera_y))
+        if self.crop_type == "Wheat" and self.seed_stage == 2:
+            screen.blit(wheat_texture, (self.x - camera_x, self.y - camera_y))
 
 money = 500
 
@@ -114,11 +124,12 @@ sell_amount = {
     "Corn": 20
 }
 
-MAX_HOLD_SIZE = 10
+MAX_HOLD_SIZE = [10,50,100,200]
+MAX_HOLD_SIZE_IDX  = 0
 
 
 # Load the carrot texture
-carrot_texture = pygame.image.load('carrot3.png').convert_alpha()
+carrot_texture = pygame.image.load('carrot.png').convert_alpha()
 # Scale it to fit the plot size (optional, only if the original PNG is too big or too small)
 carrot_texture = pygame.transform.scale(carrot_texture, (PLOT_WIDTH, PLOT_HEIGHT))
 
@@ -126,6 +137,15 @@ potatoe_texture = pygame.image.load('potatoes.png').convert_alpha()
 # Scale it to fit the plot size (optional, only if the original PNG is too big or too small)
 potatoe_texture = pygame.transform.scale(potatoe_texture, (PLOT_WIDTH, PLOT_HEIGHT))
 
+# Load the carrot texture
+corn_texture = pygame.image.load('corn.png').convert_alpha()
+# Scale it to fit the plot size (optional, only if the original PNG is too big or too small)
+corn_texture = pygame.transform.scale(corn_texture, (PLOT_WIDTH, PLOT_HEIGHT))
+
+# Load the carrot texture
+wheat_texture = pygame.image.load('wheat.png').convert_alpha()
+# Scale it to fit the plot size (optional, only if the original PNG is too big or too small)
+wheat_texture = pygame.transform.scale(wheat_texture, (PLOT_WIDTH, PLOT_HEIGHT))
 
 
 
@@ -195,24 +215,24 @@ class Character:
             if (plot.x <= self.x <= plot.x + PLOT_WIDTH or plot.x <= self.x + CHAR_WIDTH <= plot.x + PLOT_WIDTH) and \
                (plot.y <= self.y <= plot.y + PLOT_HEIGHT or plot.y <= self.y + CHAR_HEIGHT <= plot.y + PLOT_HEIGHT):
                 if plot.crop_type == "Wheat":
-                    if plot.seed_stage == 2 and self.harvested_crops["Wheat"] < MAX_HOLD_SIZE:
+                    if plot.seed_stage == 2 and self.harvested_crops["Wheat"] < MAX_HOLD_SIZE[MAX_HOLD_SIZE_IDX]:
                         self.harvested_crops[plot.crop_type] += 1
                         plot.seed_stage = 0
                         plot.set_next_growth_time()
                 if plot.crop_type == "Potatoes":
-                    if plot.seed_stage == 2 and self.character >= 1 and self.harvested_crops["Potatoes"] < MAX_HOLD_SIZE:
+                    if plot.seed_stage == 2 and self.character >= 1 and self.harvested_crops["Potatoes"] < MAX_HOLD_SIZE[MAX_HOLD_SIZE_IDX]:
                         self.harvested_crops[plot.crop_type] += 1
                         plot.seed_stage = 0
                         plot.set_next_growth_time()
                     elif self.character < 1: self.draw_crop_banner(plot.crop_type, 263)
                 if plot.crop_type == "Carrots":
-                    if plot.seed_stage == 2 and self.character >= 2 and self.harvested_crops["Carrots"] < MAX_HOLD_SIZE:
+                    if plot.seed_stage == 2 and self.character >= 2 and self.harvested_crops["Carrots"] < MAX_HOLD_SIZE[MAX_HOLD_SIZE_IDX]:
                         self.harvested_crops[plot.crop_type] += 1
                         plot.seed_stage = 0
                         plot.set_next_growth_time()
                     elif self.character < 2: self.draw_crop_banner(plot.crop_type, 263)
                 if plot.crop_type == "Corn":
-                    if plot.seed_stage == 2 and self.character >= 3 and self.harvested_crops["Corn"] < MAX_HOLD_SIZE:
+                    if plot.seed_stage == 2 and self.character >= 3 and self.harvested_crops["Corn"] < MAX_HOLD_SIZE[MAX_HOLD_SIZE_IDX]:
                         self.harvested_crops[plot.crop_type] += 1
                         plot.seed_stage = 0
                         plot.set_next_growth_time()
@@ -231,7 +251,7 @@ def draw_harvested_counts(screen,character):
     pygame.draw.rect(screen, BACKGROUND_BOX_COLOR, (SCREEN_WIDTH - BACKGROUND_BOX_WIDTH, 0, BACKGROUND_BOX_WIDTH, BACKGROUND_BOX_HEIGHT))
 
     for crop, count in character.harvested_crops.items():
-        text = f"{crop.capitalize()}: {count}/{MAX_HOLD_SIZE}"
+        text = f"{crop.capitalize()}: {count}/{MAX_HOLD_SIZE[MAX_HOLD_SIZE_IDX]}"
         text_surface = font.render(text, True, (0, 0, 0))
         screen.blit(text_surface, (SCREEN_WIDTH - text_surface.get_width() - 10, offset_y))
         offset_y += 30
@@ -284,6 +304,14 @@ left_store_area = True
 market_open = False
 left_market_area = True
 
+market_banner_on = False
+latestCrop = None
+latestSoldValue = None
+latestSoldAmount = None
+
+
+
+
 # ... (Plot and Character class definitions)
 
 # Check if character is at the store position
@@ -299,7 +327,6 @@ STORE_HEIGHT = 400  # Adjust as needed
 
 # Assuming you have these global variables defined at the top of your script:
 upgrade_stages = [1, 1, 1, 1]  # Initial stages for the four upgrades
-upgrade_costs = [100, 150, 200, 250]  # Example costs for each upgrade
 secret_option_cost = 500  # Cost for the secret option
 
 def draw_store(screen):
@@ -316,15 +343,17 @@ def draw_store(screen):
     mouse_clicked = pygame.mouse.get_pressed()[0]  # [0] is the left mouse button
 
     # Display upgrades and their current stage
-    upgrade_names = ["Upgrade 1", "Upgrade 2", "Upgrade 3", "Upgrade 4", "Secret Option"]
+    upgrade_names = [upgrade for upgrade in store_options]
+    stages = [store_options[upgrade]["stage"] + 1 for upgrade in store_options]
+    upgrade_costs = [store_options[upgrade]["cost"][store_options[upgrade]["stage"]] for upgrade in store_options]
     costs = upgrade_costs + [secret_option_cost]
     offset_y = 80
 
     for idx, upgrade_name in enumerate(upgrade_names):
         if idx < 4:
-            option_text = f"{upgrade_name} ({upgrade_stages[idx]}/4) - Cost: ${costs[idx]}"
+            option_text = f"{upgrade_name} ({stages[idx]}/4) - Cost: ${costs[idx]}"
         else:
-            option_text = f"{upgrade_name} - Cost: ${costs[idx]}"
+            option_text = f"{upgrade_name} - Cost: ${costs[idx][upgrade_stages[idx]]}"
 
         text_width, text_height = font.size(option_text)
         text_x = store_rect.centerx - text_width // 2
@@ -384,6 +413,34 @@ def draw_market(screen):
         text = font.render(option, True, color)
         screen.blit(text, (text_x, text_y))
         offset_y += 40
+    if market_banner_on:
+        draw_market_banner(latestCrop, latestSoldValue, latestSoldAmount)
+
+def draw_market_banner(crop, soldValue, soldAmount):
+    pygame.draw.rect(screen, MARKET_BANNER_COLOR, (SCREEN_WIDTH/2 - MARKET_BANNER_WIDTH/2, 15, MARKET_BANNER_WIDTH, MARKET_BANNER_HEIGHT))
+    font = pygame.font.SysFont(None, 23)
+    offset_y = 47
+    text = ""
+    if(crop == "all crops"):
+        if soldValue == 0:
+            text = f"No crops to sell!"
+            pygame.draw.rect(screen, CROP_BANNER_COLOR, (SCREEN_WIDTH/2 - MARKET_BANNER_WIDTH/2, 15, MARKET_BANNER_WIDTH, MARKET_BANNER_HEIGHT))
+
+        else:
+            text = f"Sold all crops for {soldValue}!"
+            pygame.draw.rect(screen, MARKET_BANNER_COLOR, (SCREEN_WIDTH/2 - MARKET_BANNER_WIDTH/2, 15, MARKET_BANNER_WIDTH, MARKET_BANNER_HEIGHT))
+
+    else:
+        if soldValue == 0:
+            text = f"No {crop.lower()} to sell!"
+            pygame.draw.rect(screen, CROP_BANNER_COLOR, (SCREEN_WIDTH/2 - MARKET_BANNER_WIDTH/2, 15, MARKET_BANNER_WIDTH, MARKET_BANNER_HEIGHT))
+        else:
+            text = f"Sold {soldAmount} {crop.lower()} for {soldValue}!"
+            pygame.draw.rect(screen, MARKET_BANNER_COLOR, (SCREEN_WIDTH/2 - MARKET_BANNER_WIDTH/2, 15, MARKET_BANNER_WIDTH, MARKET_BANNER_HEIGHT))
+    text_surface = font.render(text, True, (0, 0, 0))
+    screen.blit(text_surface, (SCREEN_WIDTH/2 - 70, offset_y))
+
+
 
 # Building definitions
 BUILDING_WIDTH = 100
@@ -426,24 +483,24 @@ scaled_dirt_texture = pygame.transform.scale(large_dirt_texture, (PLOT_WIDTH + D
 
 store_options = {
     "Upgrade 1": {
-        "cost": 100,
-        "description": "Increase value by 1",
-        "action": "increase_value"
+        "cost": [100,200,300,400],
+        "stage": 0,
+        "action": "increase_tractor"
     },
     "Upgrade 2": {
-        "cost": 100,
-        "description": "Increase value by 1",
-        "action": "increase_value"
+        "cost": [100,200,300,400],
+        "stage": 0,
+        "action": "increase_fertilizer"
     },
     "Upgrade 3": {
-        "cost": 100,
-        "description": "Increase value by 1",
-        "action": "increase_value"
+        "cost": [100,200,300,400],
+        "stage": 0,
+        "action": "increase_speed"
     },
     "Upgrade 4": {
-        "cost": 100,
-        "description": "Increase value by 1",
-        "action": "increase_value"
+        "cost": [100,200,300,400],
+        "stage": 0,
+        "action": "increase_inventory"
     }
     # You can add more options here in a similar manner
 }
@@ -468,6 +525,7 @@ while running:
             if event.key == pygame.K_ESCAPE:  # Close store/market with ESC key
                 store_open = False
                 market_open = False
+                market_banner_on = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             x, y = pygame.mouse.get_pos()
             # Check which option was clicked and update money and crops accordingly
@@ -480,22 +538,47 @@ while running:
                         # Handle the click for this option
                         
                         if option == "Sell All Crops":
+                            totalProfit = 0
                             for crop_type in character.harvested_crops:
+                                totalProfit += character.harvested_crops[crop_type] * sell_amount[crop_type]
                                 character.money += character.harvested_crops[crop_type] * sell_amount[crop_type]
                                 character.harvested_crops[crop_type] = 0
+                            latestSoldValue = totalProfit
+                            latestCrop = "all crops"
+                            latestSoldAmount = 0
+                            market_banner_on = True
                         else:
                             crop_type = option.split(" ")[1]
-                            character.money += character.harvested_crops[crop_type] * sell_amount[crop_type]
+                            cropProfit = character.harvested_crops[crop_type] * sell_amount[crop_type]
+                            character.money += cropProfit
+                            latestSoldValue = cropProfit
+                            latestCrop = crop_type
+                            latestSoldAmount = character.harvested_crops[crop_type]
+                            market_banner_on = True
                             character.harvested_crops[crop_type] = 0
             if store_open:
                 for index, (option_name, option_data) in enumerate(store_options.items()):
                     option_rect = get_option_rect(index)
                     if option_rect.collidepoint(x, y):
                         # Handle click for this option
-                        if character.money >= option_data["cost"]:
-                            if option_data["action"] == "increase_value":
+                        if character.money >= option_data["cost"][option_data["stage"]] and option_data["stage"] < 4:
+                            if option_data["action"] == "increase_tractor":
                                 character.character += 1
-                                character.money -= option_data["cost"]
+                                character.money -= option_data["cost"][option_data["stage"]]
+                                option_data["stage"] += 1
+                            if option_data["action"] == "increase_fertilizer":
+                                GROWTH_MEAN_IDX += 1
+                                GROWTH_STD_DEV = GROWTH_MEAN[GROWTH_MEAN_IDX]/4
+                                character.money -= option_data["cost"][option_data["stage"]]
+                                option_data["stage"] += 1
+                            if option_data["action"] == "increase_speed":
+                                CHAR_SPEED_IDX += 1
+                                character.money -= option_data["cost"][option_data["stage"]]
+                                option_data["stage"] += 1
+                            if option_data["action"] == "increase_inventory":
+                                MAX_HOLD_SIZE_IDX += 1
+                                character.money -= option_data["cost"][option_data["stage"]]
+                                option_data["stage"] += 1
 
     if store_open:
         draw_store(screen)
@@ -513,13 +596,13 @@ while running:
         dx, dy = 0, 0  # Initialize changes in x and y to 0
         keys = pygame.key.get_pressed()
         if keys[pygame.K_w]:
-            dy -= CHAR_SPEED
+            dy -= CHAR_SPEED[CHAR_SPEED_IDX]
         if keys[pygame.K_s]:
-            dy += CHAR_SPEED
+            dy += CHAR_SPEED[CHAR_SPEED_IDX]
         if keys[pygame.K_a]:
-            dx -= CHAR_SPEED
+            dx -= CHAR_SPEED[CHAR_SPEED_IDX]
         if keys[pygame.K_d]:
-            dx += CHAR_SPEED
+            dx += CHAR_SPEED[CHAR_SPEED_IDX]
 
         character.move(dx, dy)
         if not (character.x < CHAR_WIDTH and (WORLD_HEIGHT // 2 - STORE_HEIGHT // 2) < character.y < (WORLD_HEIGHT // 2 + STORE_HEIGHT // 2)):
