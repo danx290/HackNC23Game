@@ -49,7 +49,7 @@ CHAR_SPEED = [15,20,25,30]
 CHAR_SPEED_IDX = 0
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption('Farming Simulator')
+pygame.display.set_caption('Farming Simulator 2023')
 
 #Box in top right
 BACKGROUND_BOX_WIDTH = 140
@@ -78,13 +78,13 @@ GRAVEL_COLOR = (200, 200, 200)  # Gray color for gravel
 GRAVEL_WIDTH = 40  # Width of the gravel path
 PATH_WIDTH = 50  # Adjust this value based on your desired path width
 
-money = 10000
+money = 3500
 
 sell_amount = {
     "Wheat": 1,
-    "Potatoes": 5,
-    "Carrots": 10,
-    "Corn": 20
+    "Potatoes": 4,
+    "Carrots": 7,
+    "Corn": 10,
 }
 
 # Draw the store menu
@@ -96,6 +96,9 @@ store_open = False
 left_store_area = True 
 market_open = False
 left_market_area = True
+store_banner = False
+latestUpgradePurchased = None
+purchaseValidate = None
 
 market_banner_on = False
 latestCrop = None
@@ -330,7 +333,11 @@ def draw_store(screen):
     # Get mouse position and check for clicks
     mouse_pos = pygame.mouse.get_pos()
     mouse_clicked = pygame.mouse.get_pressed()[0]  # [0] is the left mouse button
-
+    font = pygame.font.SysFont(None, 24)  # Choose an appropriate font size
+    message = "Press 'Esc' to leave"
+    text_surface = font.render(message, True, (255, 255, 255))  # White text
+    position = (SCREEN_WIDTH // 2 - text_surface.get_width() // 2, SCREEN_HEIGHT - 50)  # Adjust the y-coordinate as needed
+    screen.blit(text_surface, position)
     # Display upgrades and their current stage
     upgrade_names = [upgrade for upgrade in store_options]
     stages = [store_options[upgrade]["stage"] + 1 for upgrade in store_options]
@@ -361,6 +368,36 @@ def draw_store(screen):
         text = font.render(option_text, True, color)
         screen.blit(text, (text_x, text_y))
         offset_y += 40
+    if store_banner:
+        draw_store_banner(latestUpgradePurchased, purchaseValidate)
+    draw_harvested_counts(screen,character)
+
+def draw_store_banner(upgradePurchased, notValidPurchase):
+    pygame.draw.rect(screen, MARKET_BANNER_COLOR, (SCREEN_WIDTH/2 - MARKET_BANNER_WIDTH/2, 15, MARKET_BANNER_WIDTH, MARKET_BANNER_HEIGHT))
+    font = pygame.font.SysFont(None, 23)
+    offset_y = 47
+    text = ""
+    if(notValidPurchase == "not enough money"):
+        text = f"Not enough money!"
+        pygame.draw.rect(screen, CROP_BANNER_COLOR, (SCREEN_WIDTH/2 - MARKET_BANNER_WIDTH/2, 15, MARKET_BANNER_WIDTH, MARKET_BANNER_HEIGHT))
+    elif(notValidPurchase == "maxed out"):
+        text = f"Upgrade already maxed out!!"
+        pygame.draw.rect(screen, CROP_BANNER_COLOR, (SCREEN_WIDTH/2 - MARKET_BANNER_WIDTH/2, 15, MARKET_BANNER_WIDTH, MARKET_BANNER_HEIGHT))
+    else:
+        if(latestUpgradePurchased == "increase_fertilizer"):
+            text = f"Fertilizer upgrade purchased!"
+            pygame.draw.rect(screen, MARKET_BANNER_COLOR, (SCREEN_WIDTH/2 - MARKET_BANNER_WIDTH/2, 15, MARKET_BANNER_WIDTH, MARKET_BANNER_HEIGHT))
+        elif(latestUpgradePurchased == "increase_tractor"):
+            text = f"Tractor upgrade purchased!"
+            pygame.draw.rect(screen, MARKET_BANNER_COLOR, (SCREEN_WIDTH/2 - MARKET_BANNER_WIDTH/2, 15, MARKET_BANNER_WIDTH, MARKET_BANNER_HEIGHT))
+        elif(latestUpgradePurchased == "increase_speed"):
+            text = f"Speed upgrade purchased!"
+            pygame.draw.rect(screen, MARKET_BANNER_COLOR, (SCREEN_WIDTH/2 - MARKET_BANNER_WIDTH/2, 15, MARKET_BANNER_WIDTH, MARKET_BANNER_HEIGHT))
+        elif(latestUpgradePurchased == "increase_inventory"):
+            text = f"Inventory upgrade purchased!"
+            pygame.draw.rect(screen, MARKET_BANNER_COLOR, (SCREEN_WIDTH/2 - MARKET_BANNER_WIDTH/2, 15, MARKET_BANNER_WIDTH, MARKET_BANNER_HEIGHT))
+    text_surface = font.render(text, True, (0, 0, 0))
+    screen.blit(text_surface, (SCREEN_WIDTH/2 - 100, offset_y))
 
 def check_market_position(character):
     global market_open, left_market_area
@@ -379,7 +416,12 @@ def draw_market(screen):
     mouse_pos = pygame.mouse.get_pos()
     mouse_clicked = pygame.mouse.get_pressed()[0]  # [0] is the left mouse button
     # Display selling options
-    options = ["Sell Wheat ($1)", "Sell Potatoes ($5)", "Sell Carrots ($20)", "Sell Corn ($50)", "Sell All Crops"]
+    options = ["Sell Wheat ($1)", "Sell Potatoes ($4)", "Sell Carrots ($7)", "Sell Corn ($10)", "Sell All Crops"]
+    font = pygame.font.SysFont(None, 24)  # Choose an appropriate font size
+    message = "Press 'Esc' to leave"
+    text_surface = font.render(message, True, (255, 255, 255))  # White text
+    position = (SCREEN_WIDTH // 2 - text_surface.get_width() // 2, SCREEN_HEIGHT - 50)  # Adjust the y-coordinate as needed
+    screen.blit(text_surface, position)
     offset_y = 80
     for option in options:
         # Get the text width and height for the current option
@@ -404,6 +446,7 @@ def draw_market(screen):
         offset_y += 40
     if market_banner_on:
         draw_market_banner(latestCrop, latestSoldValue, latestSoldAmount)
+    draw_harvested_counts(screen,character)
 
 def draw_market_banner(crop, soldValue, soldAmount):
     pygame.draw.rect(screen, MARKET_BANNER_COLOR, (SCREEN_WIDTH/2 - MARKET_BANNER_WIDTH/2, 15, MARKET_BANNER_WIDTH, MARKET_BANNER_HEIGHT))
@@ -456,10 +499,20 @@ def run_secret_ending(screen):
     image_rect = pygame.Rect(image_x, image_y, image_width, image_height)
 
     # Prepare the "Thanks for playing" text
-    font = pygame.font.Font(pygame.font.get_default_font(), 60)  # You can replace with a specific font path
-    text_surface = font.render("Thanks for playing", True, (0,0,0))  # White color
-    text_x = screen_width // 2 - text_surface.get_width() // 2
-    text_y = screen_height // 2 - text_surface.get_height() // 2    
+    font_large = pygame.font.SysFont(None, 36)  # Adjust font size as needed
+    text_surface_large = font_large.render("Thanks for playing", True, (255, 255, 255))  # White text
+    position_large = (SCREEN_WIDTH // 2 - text_surface_large.get_width() // 2, SCREEN_HEIGHT // 2 - text_surface_large.get_height() // 2)
+    
+
+    # Render "not" with a smaller font size
+    font_small = pygame.font.SysFont(None, 14)  # Adjust font size as needed
+    text_surface_small = font_small.render("not", True, (255, 255, 255))  # White text
+    position_small = (SCREEN_WIDTH // 2 - text_surface_large.get_width() // 2  , position_large[1] + text_surface_large.get_height() + 20)  # Positioned right below "Thanks for playing"
+    
+
+    # Render "sponsored by John Deere"
+    text_surface_sponsor = font_large.render("sponsored by John Deere", True, (255, 255, 255))  # White text
+    position_sponsor = (position_small[0] + text_surface_small.get_width() + 10 , position_small[1] - 10)  # Positioned to the right of "not"
 
     while True:
         for event in pygame.event.get():
@@ -479,7 +532,9 @@ def run_secret_ending(screen):
         screen.blit(large_image, (image_x, image_y))
         
         # Draw the text on top of the image
-        screen.blit(text_surface, (text_x, text_y))
+        screen.blit(text_surface_large, position_large)
+        screen.blit(text_surface_small, position_small)
+        screen.blit(text_surface_sponsor, position_sponsor)
 
         pygame.display.flip()
 
@@ -539,7 +594,9 @@ def get_option_rect(index):
 running = True
 while running:
     screen.fill(DIRT)
+    
     for event in pygame.event.get():
+        
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.KEYDOWN:
@@ -547,6 +604,7 @@ while running:
                 store_open = False
                 market_open = False
                 market_banner_on = False
+                store_banner = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             x, y = pygame.mouse.get_pos()
             # Check which option was clicked and update money and crops accordingly
@@ -586,21 +644,41 @@ while running:
                                 character.character += 1
                                 character.money -= option_data["cost"][option_data["stage"]]
                                 option_data["stage"] += 1
+                                latestUpgradePurchased = "increase_tractor"
+                                purchaseValidate = "upgrade purchased"
+                                store_banner = True
                             if option_data["action"] == "increase_fertilizer":
                                 GROWTH_MEAN_IDX += 1
                                 GROWTH_STD_DEV = GROWTH_MEAN[GROWTH_MEAN_IDX]/4
                                 character.money -= option_data["cost"][option_data["stage"]]
                                 option_data["stage"] += 1
+                                latestUpgradePurchased = "increase_fertilizer"
+                                purchaseValidate = "upgrade purchased"
+                                store_banner = True
                             if option_data["action"] == "increase_speed":
                                 CHAR_SPEED_IDX += 1
                                 character.money -= option_data["cost"][option_data["stage"]]
                                 option_data["stage"] += 1
+                                latestUpgradePurchased = "increase_speed"
+                                purchaseValidate = "upgrade purchased"
+                                store_banner = True
                             if option_data["action"] == "increase_inventory":
                                 MAX_HOLD_SIZE_IDX += 1
                                 character.money -= option_data["cost"][option_data["stage"]]
                                 option_data["stage"] += 1
+                                latestUpgradePurchased = "increase_inventory"
+                                purchaseValidate = "upgrade purchased"
+                                store_banner = True
                             if option_data["action"] == "secret_ending":
                                 run_secret_ending(screen)
+                        elif character.money < option_data["cost"][option_data["stage"]]:
+                            latestUpgradePurchased = None
+                            purchaseValidate = "not enough money"
+                            store_banner = True
+                        elif option_data["stage"] == 3:
+                            latestUpgradePurchased = None
+                            purchaseValidate = "maxed out"
+                            store_banner = True
 
     if store_open:
         draw_store(screen)
