@@ -21,10 +21,10 @@ RED = (255, 0, 0)
 DIRT = (181,101,30)
 
 CROP_COLORS = {
-    "carrot": (255, 105, 0),  # Orange for carrot
-    "wheat": (223, 186, 105), # Light Brown for wheat
-    "corn": (255, 228, 0),   # Yellow for corn
-    "barley": (153, 101, 21) # Dark Brown for barley
+    "Carrots": (255, 105, 0),  # Orange for carrot
+    "Wheat": (223, 186, 105), # Light Brown for wheat
+    "Corn": (255, 228, 0),   # Yellow for corn
+    "Potatoes": (153, 101, 21) # Dark Brown for potato
 }
 
 # Screen dimensions
@@ -66,10 +66,12 @@ pygame.draw.circle(SEED_STAGES[1], BROWN, (PLOT_WIDTH // 2, PLOT_HEIGHT // 2), 1
 SEED_STAGES[2].fill(GREEN)
 
 
+JohnDeerRed = [pygame.image.load('john_w.png').convert_alpha(), pygame.image.load('Truck Tiers/Red Truck/john_a.png').convert_alpha(), pygame.image.load('john_s.png').convert_alpha(),pygame.image.load('Truck Tiers/Red Truck/john_d.png').convert_alpha(), pygame.image.load('Truck Tiers/Red Truck/john_wa.png').convert_alpha(), pygame.image.load('Truck Tiers/Red Truck/john_wd.png').convert_alpha(),pygame.image.load('Truck Tiers/Red Truck/john_sa.png').convert_alpha(),pygame.image.load('Truck Tiers/Red Truck/john_sd.png').convert_alpha()]
+JohnDeerBlue = [pygame.image.load('john_w.png').convert_alpha(), pygame.image.load('Truck Tiers/Blue Truck/john_a.png').convert_alpha(), pygame.image.load('john_s.png').convert_alpha(),pygame.image.load('Truck Tiers/Blue Truck/john_d.png').convert_alpha(), pygame.image.load('Truck Tiers/Blue Truck/john_wa.png').convert_alpha(), pygame.image.load('Truck Tiers/Blue Truck/john_wd.png').convert_alpha(),pygame.image.load('Truck Tiers/Blue Truck/john_sa.png').convert_alpha(),pygame.image.load('Truck Tiers/Blue Truck/john_sd.png').convert_alpha()]
+JohnDeerPurple = [pygame.image.load('john_w.png').convert_alpha(), pygame.image.load('Truck Tiers/Purple Truck/john_a.png').convert_alpha(), pygame.image.load('john_s.png').convert_alpha(),pygame.image.load('Truck Tiers/Purple Truck/john_d.png').convert_alpha(), pygame.image.load('Truck Tiers/Purple Truck/john_wa.png').convert_alpha(), pygame.image.load('Truck Tiers/Purple Truck/john_wd.png').convert_alpha(),pygame.image.load('Truck Tiers/Purple Truck/john_sa.png').convert_alpha(),pygame.image.load('Truck Tiers/Purple Truck/john_sd.png').convert_alpha()]
+JohnDeerYellow = [pygame.image.load('john_w.png').convert_alpha(), pygame.image.load('john_a.png').convert_alpha(), pygame.image.load('john_s.png').convert_alpha(),pygame.image.load('john_d.png').convert_alpha(), pygame.image.load('john_wa.png').convert_alpha(), pygame.image.load('john_wd.png').convert_alpha(),pygame.image.load('john_sa.png').convert_alpha(),pygame.image.load('john_sd.png').convert_alpha()]
 
-JohnDeer = [pygame.image.load('john_w.png').convert_alpha(), pygame.image.load('john_a.png').convert_alpha(), pygame.image.load('john_s.png').convert_alpha(),pygame.image.load('john_d.png').convert_alpha(), pygame.image.load('john_wa.png').convert_alpha(), pygame.image.load('john_wd.png').convert_alpha(),pygame.image.load('john_sa.png').convert_alpha(),pygame.image.load('john_sd.png').convert_alpha()]
-
-CHARACTERS = [JohnDeer]
+CHARACTERS = [JohnDeerYellow]
 
 # Create a plot class
 class Plot:
@@ -104,10 +106,10 @@ class Plot:
 money = 0
 
 harvested_crops = {
-    "carrot": 0,
-    "wheat": 0,
-    "corn": 0,
-    "barley": 0
+    "Wheat": 0,
+    "Potatoes": 0,
+    "Carrots": 0,
+    "Corn": 0
 }
 
 
@@ -134,7 +136,7 @@ class Character:
             self.y = new_y
 
     def draw(self, screen, camera_x, camera_y):
-        character_image = pygame.image.load('Test2Clear.png').convert_alpha()
+        character_image = pygame.image.load('dirt.png').convert_alpha()
         keys = pygame.key.get_pressed()
         if keys[pygame.K_w] and keys[pygame.K_a]:
             self.image = CHARACTERS[self.character][4]
@@ -158,12 +160,35 @@ class Character:
         screen.blit(self.image, (draw_x, draw_y))
 
     def check_collision(self, plots):
+        farmingAbility = 3
+        if CHARACTERS == [JohnDeerPurple]:
+            farmingAbility = 2
+        elif CHARACTERS == [JohnDeerBlue]:
+            farmingAbility = 1
+        elif CHARACTERS == [JohnDeerRed]:
+            farmingAbility = 0
         for plot in plots:
             if (plot.x <= self.x <= plot.x + PLOT_WIDTH or plot.x <= self.x + CHAR_WIDTH <= plot.x + PLOT_WIDTH) and \
                (plot.y <= self.y <= plot.y + PLOT_HEIGHT or plot.y <= self.y + CHAR_HEIGHT <= plot.y + PLOT_HEIGHT):
-               if plot.seed_stage == 2:
+                if plot.crop_type == "Wheat":
+                   if plot.seed_stage == 2:
                     harvested_crops[plot.crop_type] += 1
                     plot.seed_stage = 0
+                if plot.crop_type == "Potatoes":
+                   if plot.seed_stage == 2 and farmingAbility >= 1:
+                    harvested_crops[plot.crop_type] += 1
+                    plot.seed_stage = 0
+                if plot.crop_type == "Carrots":
+                   if plot.seed_stage == 2 and farmingAbility >= 2:
+                    harvested_crops[plot.crop_type] += 1
+                    plot.seed_stage = 0
+                if plot.crop_type == "Corn":
+                   if plot.seed_stage == 2 and farmingAbility >= 3:
+                    harvested_crops[plot.crop_type] += 1
+                    plot.seed_stage = 0
+            #    if plot.seed_stage == 2:
+            #         harvested_crops[plot.crop_type] += 1
+            #         plot.seed_stage = 0
                 
 
 # Draw the harvested crop counts on the screen
@@ -246,7 +271,7 @@ def draw_market(screen):
     screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - STORE_HEIGHT // 2 + 20))
 
     # Display selling options
-    options = ["Sell Carrots", "Sell Wheat", "Sell Corn", "Sell Barley", "Sell All Crops"]
+    options = ["Sell Wheat", "Sell Potatoes", "Sell Carrots", "Sell Corn", "Sell All Crops"]
     offset_y = 80
     for option in options:
         text = font.render(option, True, (0, 0, 0))
@@ -272,10 +297,10 @@ def draw_building(screen, x, y, label, camera_x, camera_y):
 # Adjust plot generation for the 2x2 grid with gravel paths
 plots = []
 sections = [
-    {"start_x": 0, "end_x": WORLD_WIDTH // 2 - GRAVEL_WIDTH , "start_y": 0, "end_y": WORLD_HEIGHT // 2 - GRAVEL_WIDTH, "crop": "carrot"},
-    {"start_x": WORLD_WIDTH // 2 + GRAVEL_WIDTH, "end_x": WORLD_WIDTH, "start_y": 0, "end_y": WORLD_HEIGHT // 2 - GRAVEL_WIDTH, "crop": "wheat"},
-    {"start_x": 0, "end_x": WORLD_WIDTH // 2 - GRAVEL_WIDTH, "start_y": WORLD_HEIGHT // 2 + GRAVEL_WIDTH, "end_y": WORLD_HEIGHT, "crop": "corn"},
-    {"start_x": WORLD_WIDTH // 2 + GRAVEL_WIDTH , "end_x": WORLD_WIDTH, "start_y": WORLD_HEIGHT // 2 + GRAVEL_WIDTH , "end_y": WORLD_HEIGHT, "crop": "barley"}
+    {"start_x": 0, "end_x": WORLD_WIDTH // 2 - GRAVEL_WIDTH , "start_y": 0, "end_y": WORLD_HEIGHT // 2 - GRAVEL_WIDTH, "crop": "Wheat"},
+    {"start_x": WORLD_WIDTH // 2 + GRAVEL_WIDTH, "end_x": WORLD_WIDTH, "start_y": 0, "end_y": WORLD_HEIGHT // 2 - GRAVEL_WIDTH, "crop": "Potatoes"},
+    {"start_x": 0, "end_x": WORLD_WIDTH // 2 - GRAVEL_WIDTH, "start_y": WORLD_HEIGHT // 2 + GRAVEL_WIDTH, "end_y": WORLD_HEIGHT, "crop": "Carrots"},
+    {"start_x": WORLD_WIDTH // 2 + GRAVEL_WIDTH , "end_x": WORLD_WIDTH, "start_y": WORLD_HEIGHT // 2 + GRAVEL_WIDTH , "end_y": WORLD_HEIGHT, "crop": "Corn"}
 ]
 
 for section in sections:
@@ -311,7 +336,7 @@ while running:
             x, y = pygame.mouse.get_pos()
             # Check which option was clicked and update money and crops accordingly
             option_height = 40
-            for index, option in enumerate(["Sell Carrots", "Sell Wheat", "Sell Corn", "Sell Barley", "Sell All Crops"]):
+            for index, option in enumerate(["Sell Wheat", "Sell Potatoes", "Sell Carrots", "Sell Corn", "Sell All Crops"]):
                 option_y = SCREEN_HEIGHT // 2 - STORE_HEIGHT // 2 + 80 + index * option_height
                 if SCREEN_WIDTH // 2 - 100 < x < SCREEN_WIDTH // 2 + 100 and option_y < y < option_y + option_height:
                     if option == "Sell All Crops":
@@ -319,7 +344,7 @@ while running:
                             money += harvested_crops[crop_type]
                             harvested_crops[crop_type] = 0
                     else:
-                        crop_type = option.split(" ")[1].lower()
+                        crop_type = option.split(" ")[1]
                         money += harvested_crops[crop_type]
                         harvested_crops[crop_type] = 0
 
